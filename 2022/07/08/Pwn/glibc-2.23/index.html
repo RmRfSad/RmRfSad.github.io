@@ -25,7 +25,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/photo/space.jpg">
 <meta property="article:published_time" content="2022-07-07T16:00:00.000Z">
-<meta property="article:modified_time" content="2022-07-16T06:41:10.314Z">
+<meta property="article:modified_time" content="2022-07-18T02:39:44.033Z">
 <meta property="article:author" content="Pursue">
 <meta property="article:tag" content="how2heap">
 <meta name="twitter:card" content="summary_large_image">
@@ -301,7 +301,7 @@
 
 <h4 id="0ctf-2017-babyheap"><a href="#0ctf-2017-babyheap" class="headerlink" title="0ctf_2017_babyheap"></a>0ctf_2017_babyheap</h4><p>攻击流程：</p>
 <ol>
-<li>分配5个堆块（其中堆块4的请求大小要大于等于0x80，用来泄露libc的基地址），释放堆块1和堆块2，此时堆块1指向堆块2，**需要注意的是，在malloc的时候会检查堆块是否在<code>fastbin</code>中，因此需要我们分配2个堆块，修改使得第2个堆块为<code>fake_chunk</code>**。</li>
+<li>分配5个堆块（其中堆块4的请求大小要大于等于0x80，用来泄露libc的基地址），释放堆块1和堆块2，此时堆块1指向堆块2，需要注意的是，在malloc的时候会检查堆块是否在<code>fastbin</code>中，因此需要我们分配2个堆块，修改使得第2个堆块为<code>fake_chunk</code>。</li>
 <li>通过堆溢出，修改堆块2<code>fd</code>指针的低位指向堆块4，此时将堆块4接在了堆块2的后面，这时候我们再分配的0x10的堆块，就会在堆块4的地方分配，造成堆块重叠。<strong>需要注意的是，我们需要通过堆溢出将堆块4的<code>size</code>位改为0x21，否则无法绕过检查，在malloc的时候会检查分配的堆块大小与<code>size</code>是否符合</strong>。</li>
 <li>通过堆溢出修改堆块4的<code>size</code>为0x91，释放堆块4，将其链入<code>unsortedbin</code>，泄露libc的地址，<strong>需要注意的是，我们需要在堆块4之后再分配一个堆块，防止其释放的时候与<code>top chunk</code>合并</strong>。</li>
 <li>分配0x60的堆块，利用错位偏移的技巧将堆块分配在<code>__malloc_hook()</code>函数附近，修改钩子。</li>

